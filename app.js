@@ -11,6 +11,15 @@ let chatHistoryPage = 1;
 let activeChatTarget = null;
 let chatSocket = null;
 let peerConnection = null;
+// WEKA HIZI LINE HAPA (JUU YA const rtcConfig):
+window.addEventListener("load", function() {
+    console.log("Inaamsha seva ya Render kimyakimya...");
+    
+    // Inatuma ombi la kwanza la haraka ili seva ianze kuamka nyuma ya pazia
+    fetch("https://onrender.com")
+        .then(() => console.log("Seva imepokea ombi la kuamka na sasa ipo tayari!"))
+        .catch(error => console.warn("Seva inachukua muda kuwaka, inajipanga...", error));
+});
 
 const rtcConfig = {
     iceServers: [{ urls: "google.com" }] 
