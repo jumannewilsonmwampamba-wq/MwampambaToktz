@@ -1,7 +1,9 @@
 //JUMANNETOK TZ - FRONTEND CORE ENGINE (app.js)
+// //JUMANNETOK TZ - FRONTEND CORE ENGINE
+const API_URL = "https://mwampambatoktz-16.onrender.com";
+const WS_URL = "wss://mwampambatoktz-16.onrender.com/ws";
 
-
-
+// Zile let videoPage = 1 na zingine zinafuata hapa chini...
 let currentToken = localStorage.getItem("jumannetok_token") || null;
 let currentUsername = localStorage.getItem("jumannetok_username") || null;
 
@@ -16,7 +18,7 @@ window.addEventListener("load", function() {
     console.log("Inaamsha seva ya Render kimyakimya...");
     
     // Inatuma ombi la kwanza la haraka ili seva ianze kuamka nyuma ya pazia
-    fetch("https://onrender.com")
+    fetch("https://Mwampambatoktz-16.onrender.com")
         .then(() => console.log("Seva imepokea ombi la kuamka na sasa ipo tayari!"))
         .catch(error => console.warn("Seva inachukua muda kuwaka, inajipanga...", error));
 });
