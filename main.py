@@ -1,4 +1,4 @@
-import os
+
 import io
 import re
 import time
@@ -28,10 +28,14 @@ cloudinary.config(
 )
 
 # Kusaniatisha Muunganisho wa Database ya MongoDB (Motor Client)
-MONGO_DETAILS = os.getenv("MONGO_URI") # Mfumo utasoma neno hili kutoka Render au .env ya ndani
-db_client = AsyncIOMotorClient(MONGO_DETAILS)
-db = db_client.jumannetok_db
-
+MONGO_DETAILS = os.getenv("MONGO_URI")
+try:
+    db_client = AsyncIOMotorClient(MONGO_DETAILS)
+    # Hii inazuia app isizime hata kama link ina makosa
+    db_client.server_info() 
+except Exception as e:
+    print(f"Database error emebainika: {e}")
+          
 origins = [
     "http://localhost:5500",
     "http://127.0.0.1:5500",
