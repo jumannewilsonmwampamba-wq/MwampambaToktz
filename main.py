@@ -19,6 +19,7 @@ app = FastAPI(title="Jumanne Tok TZ Engine")
 JWT_SECRET = os.getenv("JUMANNE_TOK_SECRET_KEY")
 ALGORITHM = "HS256"
 
+
 # Kusanidi Hifadhi ya Seva ya Cloudinary kwa ajili ya Video na Pic
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
