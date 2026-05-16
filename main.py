@@ -79,7 +79,7 @@ async def get_current_user(token: str) -> dict:
 # MFUMO WA KUTENGENEZA PROFILE PICHA KWA HERUFI YA KWANZA YA USERNAME
 def generate_avatar(username: str) -> bytes:
     first_letter = username.upper() if username else "J"
-        from PIL import ImageFont
+    from PIL import ImageFont
     draw = ImageDraw.Draw(img)
     try:
         font = ImageFont.load_default(size=90)
