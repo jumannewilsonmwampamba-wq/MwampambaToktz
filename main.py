@@ -44,13 +44,8 @@ origins = [
 
 
 # Kuzuia hitilafu za CORS wakati kivinjari cha simu kikiomba data kwenye db
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+origins = ["*"]
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ALLOWED_FORMATS = {"mp4", "avi", "mp3"}
