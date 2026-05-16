@@ -8,3 +8,5 @@ cloudinary
 Pillow
 python-dotenv
 pydantic
+python-multipart
+
