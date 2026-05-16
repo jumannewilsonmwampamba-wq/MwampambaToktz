@@ -1,6 +1,5 @@
 //JUMANNETOK TZ - FRONTEND CORE ENGINE (app.js)
-const API_URL = "https://onrender.com/api";
-const WS_URL = "wss://://onrender.com/ws";
+
 
 
 let currentToken = localStorage.getItem("jumannetok_token") || null;
