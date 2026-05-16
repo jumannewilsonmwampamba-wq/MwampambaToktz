@@ -16,15 +16,16 @@ from PIL import Image, ImageDraw
 
 app = FastAPI(title="Jumanne Tok TZ Engine")
 # 1. ULINZI WA NAMBARI ZA SIRI (SECRET KEY PROTECTION & SECURITY)
-JWT_SECRET = os.getenv("JUMANNE_TOK_SECRET_KEY", "SIRI_KUBWA_YENYE_ULINZI_MKALI_HAPA_123456789")
+JWT_SECRET = os.getenv("JUMANNE_TOK_SECRET_KEY")
 ALGORITHM = "HS256"
 
-# Kusanidi Hifadhi ya Seva ya Cloudinary kwa ajili ya Video na Picha
+# Kusanidi Hifadhi ya Seva ya Cloudinary kwa ajili ya Video na Pic
 cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME", "jumannetok_cloud"),
-    api_key=os.getenv("CLOUDINARY_API_KEY", "api_key_yako_hapa"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET", "api_secret_yako_hapa")
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
+
 # Kusaniatisha Muunganisho wa Database ya MongoDB (Motor Client)
 MONGO_DETAILS = os.getenv("MONGO_URI") # Mfumo utasoma neno hili kutoka Render au .env ya ndani
 db_client = AsyncIOMotorClient(MONGO_DETAILS)
@@ -78,9 +79,12 @@ async def get_current_user(token: str) -> dict:
 # MFUMO WA KUTENGENEZA PROFILE PICHA KWA HERUFI YA KWANZA YA USERNAME
 def generate_avatar(username: str) -> bytes:
     first_letter = username.upper() if username else "J"
-    img = Image.new("RGB", (200, 200), color="#00a3dd") # Rangi ya Bluu ya Jumanne Tok
+        from PIL import ImageFont
     draw = ImageDraw.Draw(img)
-    draw.text((70, 50), first_letter, fill="#ffffff", font_size=90)
+    try:
+        font = ImageFont.load_default(size=90)
+    except TypeError:
+        font = ImageFont.load_default()
     img_byte_arr = io.BytesIO()
     img.save(img_byte_arr, format='PNG')
     return img_byte_arr.getvalue()
