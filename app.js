@@ -1,9 +1,8 @@
 // =================================================================
 // JUMANNETOK TZ - OFFICIAL FRONTEND CORE SOCIAL ENGINE (app.js)
 // =================================================================
-
-const API_URL = "https://onrender.com";
-const WS_URL = "wss://://onrender.com";
+const API_URL = "https://mwampambatoktz-16.onrender.com";
+const WS_URL = "wss://mwampambatoktz-16.onrender.com";
 
 let currentToken = localStorage.getItem("jumannetok_token");
 let currentUsername = localStorage.getItem("jumannetok_username");
