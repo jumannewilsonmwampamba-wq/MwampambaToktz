@@ -1,0 +1,497 @@
+/* ========================================================
+   1. MIFUMO YA AWALI NA RANGI ZA BENDERA YA TANZANIA (TZ)
+   ======================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+:root {
+    --tz-green: #1ebd50;
+    --tz-yellow: #fcd116;
+    --tz-black: #000000;
+    --tz-blue: #00a3dd;
+    --text-white: #ffffff;
+}
+
+body {
+    background-color: var(--tz-black);
+    color: var(--text-white);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========================================================
+   2. SEHEMU YA JUU NA SEACH BAR (TOP NAVIGATION)
+   ======================================================== */
+.top-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0));
+    z-index: 10;
+    padding: 0 15px;
+}
+
+.top-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.top-tab {
+    font-size: 16px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    padding: 5px 0;
+}
+
+.top-tab.active {
+    color: var(--text-white);
+    border-bottom: 2px solid var(--text-white);
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 3px 10px;
+}
+
+.search-container input {
+    background: none;
+    border: none;
+    color: white;
+    padding: 5px;
+    font-size: 13px;
+    outline: none;
+    width: 140px;
+}
+
+.search-container button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+/* ========================================================
+   3. MAIN CONTAINER NA MFUMO WA KURASA (PAGES)
+   ======================================================== */
+.main-container {
+    flex: 1;
+    margin-bottom: 60px;
+    position: relative;
+    height: calc(100vh - 60px);
+}
+
+.page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    background: linear-gradient(135deg, var(--tz-black) 40%, var(--tz-green) 100%);
+    padding: 70px 15px 15px 15px;
+    overflow-y: auto;
+}
+
+.page.active-page {
+    display: block;
+}
+
+#home-page {
+    background-color: #121212;
+    display: none;
+    padding: 0;
+}
+#home-page.active-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.video-placeholder {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.video-placeholder i {
+    font-size: 60px;
+    margin-bottom: 10px;
+}
+
+.page-content {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 10px;
+    border-left: 5px solid var(--tz-yellow);
+}
+
+/*========================================================
+   4. FOMU YA PROFILE (LOGIN / REGISTER BOX)
+   ======================================================== */
+.auth-container {
+    background: rgba(0, 0, 0, 0.85);
+    padding: 25px;
+    border-radius: 15px;
+    border: 1px solid var(--tz-yellow);
+    max-width: 360px;
+    margin: 40px auto 0 auto;
+    text-align: center;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 10px;
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: white;
+}
+
+.btn-submit {
+    background: linear-gradient(to right, var(--tz-green), var(--tz-blue));
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-back-home {
+    background: transparent;
+    color: #ff4757;
+    border: 1px solid #ff4757;
+    padding: 6px;
+    border-radius: 8px;
+    margin-top: 10px;
+    cursor: pointer;
+    width: 100%;
+}
+
+/* ========================================================
+   5. SOGA YA SIRI (WHATSAPP LOOK & LIVE TICKS)
+   ======================================================== */
+#private-chat-box {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 60px);
+    background: #0b141a;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-header {
+    background: #202c33;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.chat-header button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+#chat-messages-area {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.message {
+    max-width: 75%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    position: relative;
+    color: white;
+}
+
+.message.sent {
+    background: #005c4b;
+    align-self: flex-end;
+}
+
+.message.received {
+    background: #202c33;
+    align-self: flex-start;
+}
+
+.msg-time {
+    font-size: 10px;
+    color: rgba(255,255,255,0.6);
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.tick { font-size: 11px; color: #8696a0; }
+.tick.delivered { color: #53bdeb; }
+
+.chat-footer {
+    background: #202c33;
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+#chat-input-field {
+    flex: 1;
+    background: #2a3942;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 20px;
+    color: white;
+    outline: none;
+}
+
+#btn-send-message {
+    background: #00a884;
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* ========================================================
+   6. SEHEMU YA CHINI (BOTTOM NAVBAR VISIBLE)
+   ======================================================== */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background-color: var(--tz-black);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    flex: 1;
+    height: 100%;
+}
+
+.nav-item i { font-size: 20px; margin-bottom: 3px; }
+.nav-item.active { color: var(--text-white); }
+
+.tz-upload-btn {
+    position: relative;
+    min-width: 45px;
+    max-width: 45px;
+    height: 30px;
+    background: var(--text-white) !important;
+    border-radius: 8px !important;
+}
+
+.tz-layer {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    z-index: -1;
+}
+.green-layer { background-color: var(--tz-green); left: -3px; }
+.blue-layer { background-color: var(--tz-blue); right: -3px; }
+
+.upload-icon-center {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--tz-black);
+}
+
+/* ========================================================
+   7. MIFUMO YA LIVE VIDEO CALL
+   ======================================================== */
+#video-call-screen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: #000;
+    z-index: 200;
+}
+
+.remote-video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+}
+
+.local-video {
+    position: absolute;
+    top: 30px; right: 20px;
+    width: 110px; height: 160px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.call-controls {
+    position: absolute;
+    bottom: 40px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-hangup {
+    background: #ff3b30;
+    color: white;
+    border: none;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255,59,48,0.4);
+}
+
+/* ========================================================
+   9. KUFITI SIMU ZOTE (RESPONSIVE MEDIA QUERIES)
+   ======================================================== */
+@media screen and (max-width: 360px) {
+    .top-tab {
+        font-size: 14px;
+        gap: 10px;
+    }
+    .search-container input {
+        width: 100px;
+    }
+    .auth-container {
+        margin: 20px auto 0 auto;
+        padding: 15px;
+    }
+    .local-video {
+        width: 85px;
+        height: 125px;
+        top: 15px;
+        right: 10px;
+    }
+    .nav-item span {
+        font-size: 9px;
+    }
+
+@media screen and (min-width: 480px) {
+    .auth-container {
+        max-width: 420px;
+    }
+    #chat-messages-area {
+        padding: 20px;
+    }
+    .message {
+        max-width: 65%;
+    }
+    .local-video {
+        width: 140px;
+        height: 200px;
+    }
+}
+
+@media screen and (orientation: landscape) {
+    body {
+        overflow: auto;
+    }
+    .bottom-nav, .top-nav {
+        height: 50px;
+    }
+}
+
+.hidden { display: none !important; }
+/* Ficha kurasa zote kwa default */
+.main-container .page {
+    display: none;
+}
+
+/* Onyesha ukurasa ule tu wenye active-page */
+.main-container .page.active-page {
+    display: block; /* au flex/grid kulingana na muundo wako */
+}
+
+/* 1. MUUNDO MKUU WA KONTENA LA MATANGAZO */
+.google-ad-container {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+    padding: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    /* Hatutumii tena overflow: hidden ili kuzuia Google isikate matangazo */
+}
+
+/* 2. MAANDALIZI MAALUMU KWA AJILI YA HOME FEED (TIKTOK STYLE) */
+#home-page .home-ad-placement {
+    position: absolute;
+    bottom: 15px; /* Inakaa juu kidogo ya sehemu ya chini */
+    left: 0;
+    
+    /* Hapa tunapunguza upana kwa 75px ili kuacha nafasi ya wazi kulia */
+    width: calc(100% - 75px); 
+    
+    margin-left: 10px; /* Inasogeza nafasi kidogo kushoto isiguse pembe ya kioo */
+    z-index: 10; /* Inahakikisha tangazo linakaa juu ya video */
+}
+
+/* 3. KUREKEBISHA MATANGAZO KWENYE SIMU NDOGO (RESPONSIVE DESIGN) */
+@media screen and (max-width: 480px) {
+    /* Badala ya transform: scale(0.9) ambayo inapigwa marufuku na Google */
+    .google-ad-container {
+        max-width: 100%;
+        padding: 2px; /* Tunapunguza padding ili kubana nafasi kwenye simu */
+    }
+    
+    /* Tunalazimisha saizi ya tangazo la simu ilingane vizuri */
+    .google-ad-container ins {
+        width: 300px !important;
+        height: 50px !important;
+    }
+}
+
+
