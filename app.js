@@ -393,5 +393,39 @@ async function triggerLiveVideoCallEngine() {
 function logout() {
     localStorage.clear();
     location.reload();
+    // --- 6. USER PUBLIC PROFILE & PINNED VIEWS (PAGINATION 10 NA VIEWS ENGINE) ---
+let publicProfileVideoSkip = 0;
+
+async function viewUserPublicProfile(userId, reset = false) {
+    if (reset) publicProfileVideoSkip = 0;
+    showPage('publicProfilePage');
+    
+    // Inavuta data ya profile na video zilizopinwa 10 kumi kumi
+    const res = await fetch(`${API_URL}/users/profile/${userId}?skip=${publicProfileVideoSkip}`);
+    const userData = await res.json();
+    
+    document.getElementById('publicProfileName').innerText = `@${userData.username}`;
+    const pinnedContainer = document.getElementById('pinnedVideosContainer');
+    if (reset) pinnedContainer.innerHTML = "";
+    
+    // Mfumo unaleta video 10 kwanza za mmiliki, na kila video inaonyesha na kuhesabu views zake halisi
+    userData.pinned_videos.forEach(v => {
+        const div = document.createElement('div');
+        div.className = "pinned-item";
+        div.innerHTML = `
+            <div class="video-box" onclick="countRealTimeVideoView('${v._id}')">
+                <video src="${v.video_url}" controls></video>
+                <div class="profile-video-stats">
+                    <span>👁️ ${v.views} Views</span>
+                </div>
+            </div>
+        `;
+        pinnedContainer.appendChild(div);
+    });
+    
+    // Inasogeza mbele skip ili mtumiaji akitaka kuona zingine pakia 10 zinazofuata
+    publicProfileVideoSkip += 10;
+}
+    
                         }
                 
