@@ -1,412 +1,409 @@
 // =============================================================================
-// MIPANGILIO YA SEVA NA MAWASILIANO YA REAL-TIME (SOCKET.IO)
+// 1. MIPANGILIO YA SEVA, USALAMA WA TOKEN (JWT) NA VARIABLE KUU
 // =============================================================================
-const API_URL = "https://ndere.onrender.com"; // Link yako sahihi ya Render
-const socket = io(API_URL); // Inachukua API_URL hapo juu kiotomatiki
+const API_URL = "https://ndere.onrender.com";
+let socket = null;
+let currentVideoId = null; // Variable yako ipo hapa kama ulivyotaka mkuu!
+let localStream = null;
+let peerConnection = null;
 
-// Data za mtumiaji aliyopo kwenye mfumo kwa sasa (Mfano wa majaribio)
+// Hapa mfumo unasoma Token na Username zilizohifadhiwa kwenye simu ya mtumiaji
 let currentUser = {
-    username: "jumanne_user",
-    profile_pic: "https://cloudinary.com"
+    username: localStorage.getItem("username") || "",
+    token: localStorage.getItem("token") || ""
 };
 
-// Vigezo vya kurasa (Pagination - Kumi Kumi)
-let currentVideoId = null;
+// Vigezo vya Kurasa (Pagination 10-10 kama ilivyo kwenye Python yako)
 let currentVideoPage = 1;
 let currentCommentPage = 1;
 let currentChatUserPage = 1;
-let currentFriendPage = 1;
 let currentActiveChatPartner = null;
 
-// Unganisha mtumiaji kwenye chumba chake cha siri cha ujumbe mara tu anapoingia
-socket.emit("join_room", currentUser.username);
+// Mipangilio ya seva za WebRTC (STUN Servers za bure kutoka Google)
+const rtcConfig = {
+    iceServers: [{ urls: "stun:://google.com" }]
+};
 
-// =============================================================================
-// 1. MFUMO WA VIDEO (Likes, Comments Count, Views, Pin, Download, Mobile Share)
-// =============================================================================
-
-// A. Kuhesabu Views Kila Video Ikifunguliwa tu (Kama TikTok)
-async function registerVideoView(videoId) {
-    try {
-        await fetch(`${API_URL}/api/videos/${videoId}/view`, { method: "POST" });
-        let viewCountElement = document.getElementById(`views-count-${videoId}`);
-        if (viewCountElement) {
-            let currentViews = parseInt(viewCountElement.innerText) || 0;
-            viewCountElement.innerText = currentViews + 1;
-        }
-    } catch (error) {
-        console.error("Ushindani wa kuhesabu view feli:", error);
-    }
-}
-
-// B. Kitufe cha Like - Kujiongeza na Kujipunguza (Hesabu ya Moja Moja)
-async function toggleLikeVideo(videoId) {
-    try {
-        let response = await fetch(`${API_URL}/api/videos/${videoId}/like`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username: currentUser.username })
-        });
-        let data = await response.json();
-        
-        let likeCountElement = document.getElementById(`like-count-${videoId}`);
-        let likeBtn = document.getElementById(`like-btn-${videoId}`);
-        
-        if (data.action === "liked") {
-            likeCountElement.innerText = parseInt(likeCountElement.innerText) + 1;
-            likeBtn.style.color = "red"; // Imependwa
-        } else {
-            likeCountElement.innerText = parseInt(likeCountElement.innerText) - 1;
-            likeBtn.style.color = "white"; // Imetolewa like
-        }
-    } catch (error) {
-        console.error("Mfumo wa like umefeli:", error);
-    }
-}
-
-// C. Kitufe cha More (Kinafungua Menu: Save, Copy Link, Pin, Download)
-function openMoreMenu(video) {
-    let menuHtml = `
-        <div class="more-menu-popup" id="menu-${video._id}">
-            <button onclick="saveVideoToBookmarks('${video._id}')">Save Video</button>
-            <button onclick="copyVideoLink('${video.video_url}')">Copy Link</button>
-            <button onclick="pinVideoOwner('${video._id}')">Pin Video (Wamiliki Tu)</button>
-            <button onclick="downloadVideoWithWatermark('${video.video_url}', '${video.username}')">Download</button>
-        </div>
-    `;
-    document.body.insertAdjacentHTML("beforeend", menuHtml);
-}
-
-// D. Copy Link ya Video
-function copyVideoLink(videoUrl) {
-    navigator.clipboard.writeText(videoUrl).then(() => {
-        alert("Link ya video imenakiliwa vizuri!");
-    });
-}
-
-// E. Download Video yenye Chapa ya "jumannetok tz" na Username ya Mmiliki
-function downloadVideoWithWatermark(videoUrl, ownerUsername) {
-    alert(`Inapakua video... Chapa iliyochapwa: jumannetok tz - Mmiliki: ${ownerUsername}`);
+// Ukurasa ukifunguka kwa mara ya kwanza
+window.addEventListener("DOMContentLoaded", () => {
+    setupNavigationListeners();
     
-    const link = document.createElement("a");
-    link.href = videoUrl;
-    link.download = `jumannetok_tz_${ownerUsername}_video.mp4`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// F. Kitufe cha Pin Video (Mwisho video 5, ya 6 ikija ya kwanza inatoka)
-async function pinVideoOwner(videoId) {
-    try {
-        let response = await fetch(`${API_URL}/api/videos/${videoId}/pin`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username: currentUser.username })
-        });
-        let data = await response.json();
-        if (data.error) {
-            alert(data.error); // Inakataa kama sio mmiliki halali
-        } else {
-            alert("Video imepiniwa juu ya profile yako kwa mafanikio!");
-        }
-    } catch (error) {
-        console.error("Mfumo wa kupin umefeli:", error);
-    }
-}
-
-// G. Kufuta Video (Inaruhusu Mmiliki Halali Tu)
-async function deleteVideoOwner(videoId) {
-    if (!confirm("Je, una uhakika unataka kufuta video hii kabisa?")) return;
-    
-    try {
-        let response = await fetch(`${API_URL}/api/videos/${videoId}`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username: currentUser.username })
-        });
-        let data = await response.json();
-        if (data.error) {
-            alert(data.error); // Inakataa kama sio mmiliki halali
-        } else {
-            document.getElementById(`video-card-${videoId}`).remove();
-            alert("Video imefutwa kabisa kwenye mfumo!");
-        }
-    } catch (error) {
-        console.error("Ufutaji wa video umefeli:", error);
-    }
-}
-
-// H. Share Inayofungua Programu Zilizopo Kwenye Simu ya Mtumiaji
-function shareVideoMobile(videoTitle, videoUrl) {
-    if (navigator.share) {
-        navigator.share({
-            title: videoTitle,
-            text: "Angalia video hii kwenye mtandao wetu!",
-            url: videoUrl
-        }).then(() => {
-            console.log("Mtumiaji ameshare kwa mafanikio.");
-        }).catch(err => console.log("Mtumiaji ameahirisha share"));
+    if (currentUser.token) {
+        showMainApp();
     } else {
-        copyVideoLink(videoUrl);
+        // MAREKEBISHO: Inafuata class yako sahihi ya "active-page" kulingana na HTML yako
+        document.querySelectorAll(".page").forEach(p => p.classList.remove("active-page"));
+        let profilePage = document.getElementById("profile-page");
+        if (profilePage) profilePage.classList.add("active-page");
     }
+});
+
+function showMainApp() {
+    socket = new WebSocket(`wss://://onrender.com{currentUser.username}?token=${currentUser.token}`);
+    setupWebSocketListeners();
+    
+    // MAREKEBISHO: Inafungua kurasa kwa kutumia class yako sahihi ya "active-page"
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active-page"));
+    let homePage = document.getElementById("home-page");
+    if (homePage) homePage.classList.add("active-page");
+    
+    switchVideoFeedTab("for_you");
 }
 
 // =============================================================================
-// 2. MFUMO WA COMMENTS (Kufungua, Kuona za Wengine, kutuma, kuleta 10-10)
+// 2. MFUMO WA ENTRY / LOGIN / REGISTER (Inagonga /api/auth/entry)
 // =============================================================================
-async function openCommentsSection(videoId, isNewLoad = true) {
-    if (isNewLoad) currentCommentPage = 1;
+async function handleUserAuthEntry(event) {
+    if (event) event.preventDefault(); 
     
-    document.getElementById("comments-container").innerHTML = "Inapakia comment za watumiaji...";
+    let userInp = document.getElementById("auth-username").value.trim();
+    let passInp = document.getElementById("auth-password").value.trim();
     
-    try {
-        let response = await fetch(`${API_URL}/api/videos/${videoId}/comments?page=${currentCommentPage}`);
-        let comments = await response.json();
-        
-        if (isNewLoad) document.getElementById("comments-container").innerHTML = "";
-        
-        comments.forEach(comment => {
-            let commentHtml = `
-                <div class="comment-box">
-                    <img src="${comment.profile_pic}" class="user-pic-comment" />
-                    <strong>${comment.username}:</strong>
-                    <span>${comment.text}</span>
-                </div>
-            `;
-            document.getElementById("comments-container").insertAdjacentHTML("beforeend", commentHtml);
-        });
-        
-        if (comments.length === 10) {
-            let moreBtn = `<button onclick="loadMoreComments('${videoId}')">Leta zingine 10...</button>`;
-            document.getElementById("comments-container").insertAdjacentHTML("beforeend", moreBtn);
-        }
-    } catch (error) {
-        console.error("Comments zimegoma kupakia:", error);
-    }
-}
+    if (!userInp || !passInp) return alert("Tafadhali jaza username na password mkuu!");
 
-function loadMoreComments(videoId) {
-    currentCommentPage++;
-    openCommentsSection(videoId, false);
-}
+    let formData = new FormData();
+    formData.append("username", userInp);
+    formData.append("password", passInp);
 
-// Kutuma Comment Mpya na Kujihesabu Moja kwa Moja
-async function sendNewComment(videoId, commentTextInput) {
-    if (!commentTextInput.trim()) return;
-    
     try {
-        let response = await fetch(`${API_URL}/api/videos/${videoId}/comments`, {
+        let response = await fetch(`${API_URL}/api/auth/entry`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                username: currentUser.username,
-                profile_pic: currentUser.profile_pic,
-                text: commentTextInput
-            }) // Hapa pamesahihishwa!
+            body: formData
         });
+        let data = await response.json();
         
-        if (response.ok) {
-            let countElement = document.getElementById(`comment-count-${videoId}`);
-            countElement.innerText = parseInt(countElement.innerText) + 1;
-            openCommentsSection(videoId, true); 
-        }
-    } catch (error) {
-        console.error("Kutuma comment kumeshindikana:", error);
-    }
-}
-
-// =============================================================================
-// 3. WHATSAPP-LIKE REALTIME CHATS (Ujumbe wa siri, Picha, Video, na Tik mbili)
-// =============================================================================
-
-async function loadChatProfilesList() {
-    try {
-        let res = await fetch(`${API_URL}/api/chats/users?username=${currentUser.username}&page=${currentChatUserPage}`);
-        let users = await res.json();
-        
-        users.forEach((user, index) => {
-            let profileHtml = `
-                <div class="chat-profile-item" onclick="startPrivateChatWindow('${user.username}')">
-                    <img src="${user.profile_pic || 'default.png'}" />
-                    <span>${user.username}</span>
-                    <button class="chat-btn">Chat Sasa</button>
-                </div>
-            `;
-            document.getElementById("chat-profiles-list").insertAdjacentHTML("beforeend", profileHtml);
+        if (response.ok && data.token) {
+            localStorage.setItem("username", userInp);
+            localStorage.setItem("token", data.token);
+            currentUser.username = userInp;
+            currentUser.token = data.token;
             
-            if (index === 7 && users.length === 10) {
-                currentChatUserPage++;
-                loadChatProfilesList();
-            }
-        });
+            alert("Umeingia kwenye mfumo wa JumanneTok Tz kwa mafanikio!");
+            showMainApp();
+        } else {
+            alert(data.detail || "Hitilafu imetokea wakati wa kuingia au kusajili!");
+        }
     } catch (error) {
-        console.error("Orodha ya chat profiles imefeli:", error);
+        console.error("Mawasiliano na seva yamefeli:", error);
     }
 }
 
-function startPrivateChatWindow(partnerUsername) {
-    currentActiveChatPartner = partnerUsername;
-    document.getElementById("chat-box-title").innerText = `Ujumbe wa Siri na: ${partnerUsername}`;
-    document.getElementById("chat-messages-area").innerHTML = ""; 
-}
-
-function sendPrivateMessage(content, msgType = "text") {
-    if (!currentActiveChatPartner) return alert("Chagua mtu wa kuchat naye kwanza!");
-    
-    let msgData = {
-        _id: "temp_" + Date.now(), 
-        sender: currentUser.username,
-        receiver: currentActiveChatPartner,
-        type: msgType, 
-        content: content
-    };
-    
-    socket.emit("send_message", msgData);
-    appendMessageToScreen(msgData, "my-message", "✓");
-}
-
-socket.on("message_received", (msg) => {
-    if (msg.sender === currentActiveChatPartner) {
-        appendMessageToScreen(msg, "partner-message", "");
-        socket.emit("msg_delivered", { msg_id: msg._id, sender: msg.sender });
-    }
-});
-
-socket.on("status_updated", (data) => {
-    let tickElement = document.getElementById(`tick-${data.msg_id}`);
-    if (tickElement) {
-        tickElement.innerText = "✓✓"; 
-    }
-});
-
-function appendMessageToScreen(msg, className, tickStyle) {
-    let displayContent = msg.content;
-    if (msg.type === "image") displayContent = `<img src="${msg.content}" class="chat-img" />`;
-    if (msg.type === "video") displayContent = `<video src="${msg.content}" controls class="chat-vid"></video>`;
-    
-    let msgHtml = `
-        <div class="message ${className}">
-            <div class="bubble">${displayContent}</div>
-            <span class="tick-status" id="tick-${msg._id}">${tickStyle}</span>
-        </div>
-    `;
-    document.getElementById("chat-messages-area").insertAdjacentHTML("beforeend", msgHtml);
-}
-
-function saveVideoToBookmarks(videoId) {
-    alert("Video imehifadhiwa kwenye alamisho (Bookmarks) zako!");
-}
-
-
-// =============================================================================
-// 4. VIDEO CALL MFUMO (WebRTC Real-time Voice & Video Call Live)
-// =============================================================================
-function initiateLiveVideoCall() {
-    if (!currentActiveChatPartner) return alert("Tafadhali chagua mtu wa kumpigia simu!");
-    
-    alert(`Inapiga simu ya video ya Live kwenda kwa ${currentActiveChatPartner}...`);
-    
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then((stream) => {
-            document.getElementById("local-video-screen").srcObject = stream;
-            socket.emit("call_user", {
-                userToCall: currentActiveChatPartner,
-                from: currentUser.username
-            });
-        })
-        .catch(err => alert("Ruhusu kamera na mic ili upige video call!"));
+let authForm = document.querySelector(".auth-form");
+if (authForm) {
+    authForm.removeAttribute("action");
+    authForm.addEventListener("submit", handleUserAuthEntry);
 }
 
 // =============================================================================
-// 5. MFUMO WA FRIENDS (Followers, Confirm, Delete, Orodha ya 10-10)
+// 3. INJINI YA VIDEO FEED (Inasoma /api/videos/stream - Mstari 221 wa Python)
 // =============================================================================
+async function switchVideoFeedTab(feedTabName) {
+    let videoContainer = feedTabName === "friends" 
+        ? document.getElementById("friends-videos-container") 
+        : document.querySelector("#home-page .video-placeholder") || document.getElementById("home-page"); 
+        
+    if (!videoContainer) return;
+    videoContainer.innerHTML = "<div style='padding:20px; text-align:center;'>Inatafuta video kwenye engine ya Python...</div>";
 
-async function followTargetUser(targetUsername) {
+    let formData = new FormData();
+    formData.append("page", currentVideoPage);
+    formData.append("tab", feedTabName); 
+    formData.append("token", currentUser.token); 
+
     try {
-        let response = await fetch(`${API_URL}/api/friends/follow`, {
+        let response = await fetch(`${API_URL}/api/videos/stream`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sender: currentUser.username, receiver: targetUsername })
+            body: formData
         });
-        if (response.ok) {
-            alert(`Ombi la urafiki limetumwa!`);
-        }
-    } catch (error) {
-        console.error("Ombi la follow limefeli:", error);
-    }
-}
-
-async function loadMyFriendsSection() {
-    try {
-        let response = await fetch(`${API_URL}/api/friends/list?username=${currentUser.username}&page=${currentFriendPage}`);
-        let friends = await response.json();
-        
-        friends.forEach(friend => {
-            let friendHtml = `
-                <div class="friend-card">
-                    <span>${friend.username}</span>
-                    <button onclick="startPrivateChatWindow('${friend.username}')">Chat</button>
-                </div>
-            `;
-            document.getElementById("friends-container-list").insertAdjacentHTML("beforeend", friendHtml);
-        });
-        
-        if (friends.length === 10) {
-            let loadMoreFriendsBtn = `<button onclick="loadMoreFriends()">Leta wengine 10 marafiki...</button>`;
-            document.getElementById("friends-container-list").insertAdjacentHTML("beforeend", loadMoreFriendsBtn);
-        }
-    } catch (error) {
-        console.error("Ushindani wa kupakia marafiki feli:", error);
-    }
-}
-
-function loadMoreFriends() {
-    currentFriendPage++;
-    loadMyFriendsSection();
-}
-
-// =============================================================================
-// 6. AI NDOGO YA VIDEO (For You, Friends Feed, na Sehemu ya Search)
-// =============================================================================
-async function switchVideoFeedTab(feedType) {
-    currentVideoPage = 1;
-    document.getElementById("video-feed-container").innerHTML = "Inatafuta video...";
-    
-    let url = `${API_URL}/api/videos/feed?type=${feedType}&username=${currentUser.username}&page=${currentVideoPage}`;
-    
-    if (feedType === "search") {
-        let searchQuery = document.getElementById("search-input-box").value;
-        url += `&query=${searchQuery}`;
-    }
-    
-    try {
-        let response = await fetch(url);
         let videos = await response.json();
-        
-        document.getElementById("video-feed-container").innerHTML = ""; 
-        
+        videoContainer.innerHTML = "";
+
+        if (!videos || videos.length === 0) {
+            videoContainer.innerHTML = "<div style='padding:20px; text-align:center;'>Hakuna video zilizopatikana kwa sasa.</div>";
+            return;
+        }
+
         videos.forEach(video => {
-            let videoCardHtml = `
-                <div class="video-card" id="video-card-${video._id}" onmouseover="registerVideoView('${video._id}')">
-                    <video src="${video.video_url}" class="main-video-player" controls loop></video>
-                    <div class="video-sidebar-actions">
-                        <button id="like-btn-${video._id}" onclick="toggleLikeVideo('${video._id}')">❤️ <span id="like-count-${video._id}">${video.likes.length}</span></button>
-                        <button onclick="openCommentsSection('${video._id}')">💬 <span id="comment-count-${video._id}">0</span></button>
-                        <button onclick="shareVideoMobile('${video.title}', '${video.video_url}')">🔗 Share</button>
-                        <button onclick='openMoreMenu(${JSON.stringify(video)})'>••• More</button>
+            let card = `
+                <div class="video-card" style="background:#111; margin-bottom:20px; padding:15px; border-radius:8px;">
+                    <h4 style="margin:0 0 10px 0; color:#00cbff;">@${video.owner_username || 'user'}</h4>
+                    <p style="margin:0 0 10px 0;">${video.description || ''}</p>
+                    <video src="${video.video_url}" style="width:100%; border-radius:8px;" controls loop autoplay muted></video>
+                    <div style="margin-top:10px; display:flex; gap:15px; flex-wrap: wrap;">
+                        <button onclick="toggleLikeVideo('${video.video_id}')" style="background:none; border:none; color:white; cursor:pointer;">❤️ Like (${video.likes_count || 0})</button>
+                        <button onclick="openCommentsSection('${video.video_id}')" style="background:none; border:none; color:white; cursor:pointer;">💬 Comment (${video.comments_count || 0})</button>
+                        <button style="background:none; border:none; color:white;">👁️ Views (${video.views || 0})</button>
+                        <button onclick="pinVideoOwner('${video.video_id}')" style="background:none; border:none; color:white; cursor:pointer;">📌 Pin</button>
+                        <button onclick="downloadVideoWithWatermark('${video.video_id}')" style="background:none; border:none; color:white; cursor:pointer;">📥 Download</button>
                     </div>
                 </div>
             `;
-            document.getElementById("video-feed-container").insertAdjacentHTML("beforeend", videoCardHtml);
+            videoContainer.insertAdjacentHTML("beforeend", card);
         });
     } catch (error) {
-        console.error("Kuload video feed kumeshindikana:", error);
+        console.error("Feli kuvuta video kutoka Python:", error);
     }
-            }
-// Inapakia video za "For You" kiotomatiki mara tu mtumiaji anapofungua tovuti
-window.addEventListener("DOMContentLoaded", () => {
-    switchVideoFeedTab('for_you');
-});
+}
 
+// =============================================================================
+// 4. KUPAKIA VIDEO MPYA (Inagonga /api/videos/post - Mstari 172 wa Python)
+// =============================================================================
+async function handleNewVideoUpload() {
+    let desc = prompt("Andika maelezo (description) ya video yako:");
+    let tags = prompt("Weka tags (tenganisha kwa mkato mfano: comedy,music):");
+    
+    let fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "video/*";
+    
+    fileInput.onchange = async () => {
+        if (fileInput.files.length === 0) return;
+        
+        let formData = new FormData();
+        formData.append("description", desc || "Video mpya");
+        formData.append("tags", tags || "video");
+        formData.append("file", fileInput.files[0]); // Chagua faili la kwanza kwa usahihi kabisa
+        formData.append("token", currentUser.token); 
+
+        alert("Video inapakizwa na kukaguliwa na AI ya usalama, tafadhali subiri kidogo mkuu...");
+
+        try {
+            let response = await fetch(`${API_URL}/api/videos/post`, {
+                method: "POST",
+                body: formData
+            });
+            let data = await response.json();
+            alert(data.message || data.detail);
+            switchVideoFeedTab("for_you"); 
+        } catch (error) {
+            console.error("Kupakia video kulifeli:", error);
+        }
+    };
+    
+    fileInput.click();
+}
+
+let uploadBtn = document.querySelector(".tz-upload-btn");
+if (uploadBtn) {
+    uploadBtn.onclick = handleNewVideoUpload;
+}
+
+// =============================================================================
+// 5. MIFUMO YA LIKES, PIN, NA DOWNLOADS 
+// =============================================================================
+async function toggleLikeVideo(videoId) {
+    let formData = new FormData();
+    formData.append("token", currentUser.token); 
+    let response = await fetch(`${API_URL}/api/videos/${videoId}/like`, { method: "POST", body: formData });
+    if (response.ok) switchVideoFeedTab("for_you");
+}
+
+async function pinVideoOwner(videoId) {
+    let formData = new FormData();
+    formData.append("token", currentUser.token); 
+    let response = await fetch(`${API_URL}/api/videos/${videoId}/pin`, { method: "POST", body: formData });
+    let data = await response.json();
+    alert(data.message || data.detail);
+}
+
+async function downloadVideoWithWatermark(videoId) {
+    let response = await fetch(`${API_URL}/api/videos/${videoId}/download`);
+    let data = await response.json();
+    alert("Chapa iliyowekwa: " + data.watermark);
+    window.open(data.video_url, "_blank");
+}
+
+// =============================================================================
+// 6. REALTIME SOGA & INJINI YA VIDEO CALL (Mstari 366-390 wa Python)
+// =============================================================================
+function setupWebSocketListeners() {
+    socket.onmessage = async (event) => {
+        let data = JSON.parse(event.data);
+        
+        if (data.sender && data.sender === currentActiveChatPartner && !data.type.startsWith("video_")) {
+            let area = document.getElementById("chat-messages-area");
+            area.insertAdjacentHTML("beforeend", `
+                <div class="message received" style="margin-bottom:10px;">
+                    <p style="background:#222; padding:8px; border-radius:5px; display:inline-block; margin:0;">${data.content}</p>
+                </div>
+            `);
+            area.scrollTop = area.scrollHeight;
+        }
+        
+        if (data.type === "msg_delivered_receipt") {
+            let tick = document.getElementById(`tick-${data.msg_id}`);
+            if (tick) {
+                tick.className = "fas fa-check-double tick delivered"; 
+                tick.style.color = "#00cbff"; 
+            }
+        }
+
+        if (data.type === "video_offer") {
+            if (confirm(`Mtumiaji @${data.sender} anakupigia simu ya video. Je, unapokea?`)) {
+                currentActiveChatPartner = data.sender;
+                document.getElementById("video-call-screen").classList.remove("hidden");
+                
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById("localVideo").srcObject = localStream;
+                
+                peerConnection = new RTCPeerConnection(rtcConfig);
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                
+                peerConnection.ontrack = (e) => {
+                    document.getElementById("remoteVideo").srcObject = e.streams[0];
+                };
+                
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(data.content)));
+                let answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                socket.send(JSON.stringify({
+                    receiver: data.sender,
+                    type: "video_answer",
+                    content: JSON.stringify(answer)
+                }));
+            } else {
+                socket.send(JSON.stringify({ receiver: data.sender, type: "call_rejected", content: "Simu imekataliwa" }));
+            }
+        }
+        
+        if (data.type === "video_answer") {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(data.content)));
+        }
+        
+        if (data.type === "call_rejected") {
+            alert("Mlengwa amekata au amekataa simu yako ya video.");
+            endLiveVideoCall();
+        }
+    };
+}
+
+async function initiateLiveVideoCall() {
+    if (!currentActiveChatPartner) return alert("Tafadhali chagua mtu wa kumpigia simu kwanza!");
+    
+    document.getElementById("video-call-screen").classList.remove("hidden");
+    
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    document.getElementById("localVideo").srcObject = localStream;
+    
+    peerConnection = new RTCPeerConnection(rtcConfig);
+    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+    
+    peerConnection.ontrack = (e) => {
+        document.getElementById("remoteVideo").srcObject = e.streams[0];
+    };
+    
+    let offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    
+    socket.send(JSON.stringify({
+        receiver: currentActiveChatPartner,
+        type: "video_offer",
+        content: JSON.stringify(offer)
+    }));
+}
+
+function endLiveVideoCall() {
+    document.getElementById("video-call-screen").classList.add("hidden");
+    if (localStream) localStream.getTracks().forEach(track => track.stop());
+    if (peerConnection) peerConnection.close();
+}
+
+let endCallBtn = document.getElementById("btn-end-call");
+if (endCallBtn) endCallBtn.onclick = endLiveVideoCall;
+
+async function loadChatProfilesList() {
+    let formData = new FormData();
+    formData.append("token", currentUser.token); 
+    
+    let response = await fetch(`${API_URL}/api/chat/users`, { method: "POST", body: formData });
+    let users = await response.json();
+    
+    let list = document.getElementById("chat-list");
+    if (!list) return;
+    list.innerHTML = "";
+
+    users.forEach(u => {
+        list.insertAdjacentHTML("beforeend", `
+            <div onclick="startPrivateChat('${u.username}')" style="cursor:pointer; padding:12px; border-bottom:1px solid #222; color:white;">
+                <strong>@${u.username}</strong>
+            </div>
+        `);
+    });
+}
+
+function startPrivateChat(partner) {
+    currentActiveChatPartner = partner;
+    document.getElementById("private-chat-box").classList.remove("hidden");
+    document.getElementById("chat-target-name").innerText = "@" + partner;
+    document.getElementById("chat-messages-area").innerHTML = "";
+    
+    document.getElementById("btn-send-message").onclick = () => {
+        let txt = document.getElementById("chat-input-field").value; 
+        sendPrivateMessage(txt);
+    };
+}
+
+function sendPrivateMessage(txt) {
+    if (!currentActiveChatPartner || !txt.trim()) return;
+    
+    let payload = { receiver: currentActiveChatPartner, type: "text", content: txt };
+    socket.send(JSON.stringify(payload));
+    
+    let area = document.getElementById("chat-messages-area");
+    let tempId = "msg-" + Date.now();
+    
+    area.insertAdjacentHTML("beforeend", `
+        <div class="message sent" style="text-align:right; margin-bottom:10px;">
+            <p style="background:#8a2be2; padding:8px; border-radius:5px; display:inline-block; margin:0; text-align:left;">${txt}</p>
+            <div class="msg-status"><i class="fas fa-check" id="tick-${tempId}" style="color:gray; font-size:10px; margin-left:5px;"></i></div>
+        </div>
+    `);
+    
+    document.getElementById("chat-input-field").value = "";
+    area.scrollTop = area.scrollHeight;
+}
+
+// =============================================================================
+// 7. INJINI YA URUMBAZAJI WA MENYU (BOTTOM NAV & TOP NAV BAR)
+// =============================================================================
+function setupNavigationListeners() {
+    let topTabs = document.querySelectorAll(".top-nav span");
+    topTabs.forEach(tab => {
+        tab.onclick = () => {
+            topTabs.forEach(t => t.classList.remove("top-tab-active"));
+            tab.classList.add("top-tab-active");
+            if (tab.innerText.trim() === "For You") switchVideoFeedTab("for_you");
+            if (tab.innerText.trim() === "Friends") switchVideoFeedTab("friends");
+        };
+    });
+
+    let navButtons = document.querySelectorAll(".bottom-navigation-bar button, .bottom-nav button, .nav-item");
+    navButtons.forEach(btn => {
+        btn.onclick = () => {
+            let label = btn.querySelector("span") ? btn.querySelector("span").innerText.trim() : "";
             
+            // MAREKEBISHO: Inabadilisha kurasa kwa kutumia class yako sahihi ya "active-page"
+            if (label === "Home") {
+                document.querySelectorAll(".page").forEach(p => p.classList.remove("active-page"));
+                document.getElementById("home-page").classList.add("active-page");
+                switchVideoFeedTab("for_you");
+            }
+            else if (label === "Friends") {
+                document.querySelectorAll(".page").forEach(p => p.classList.remove("active-page"));
+                document.getElementById("friends-page").classList.add("active-page");
+                switchVideoFeedTab("friends");
+            }
+            else if (label === "Inbox") {
+                document.querySelectorAll(".page").forEach(p => p.classList.remove("page-active-page"));
+                document.getElementById("inbox-page").classList.add("active-page");
+                loadChatProfilesList(); 
+            }
+            else if (label === "Profile") {
+                document.querySelectorAll(".page").forEach(p => p.classList.remove("active-page"));
+                document.getElementById("profile-page").classList.add("active-page");
+            }
+        };
+    });
+                                                                                                                                                            }
+    
