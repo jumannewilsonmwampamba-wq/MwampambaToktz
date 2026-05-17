@@ -450,3 +450,21 @@ async def get_friends_list(page: int = 1, token: str = Form(...)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+
+import threading
+import time
+import requests
+
+def keep_alive():
+    time.sleep(300)
+    url = "https://jumanne.onrender.com"
+    while True:
+        try:
+            response = requests.get(url)
+            print(f"Self-ping imefanikiwa: Status {response.status_code}")
+        except Exception as e:
+            print(f"Self-ping imefeli: {e}")
+        time.sleep(600)
+
+threading.Thread(target=keep_alive, daemon=True).start()
