@@ -454,17 +454,19 @@ if __name__ == "__main__":
 
 import threading
 import time
-import requests
+import urllib.request
 
 def keep_alive():
     time.sleep(300)
-    url = "https://furaha.onrender.com"
+    url = "https://ndere.onrender.com"
     while True:
         try:
-            response = requests.get(url)
-            print(f"Self-ping imefanikiwa: Status {response.status_code}")
+            # Inatumia mfumo wa ndani wa Python bila kuhitaji requests module
+            with urllib.request.urlopen(url) as response:
+                print(f"Self-ping imefanikiwa: Status {response.getcode()}")
         except Exception as e:
             print(f"Self-ping imefeli: {e}")
         time.sleep(600)
 
 threading.Thread(target=keep_alive, daemon=True).start()
+
