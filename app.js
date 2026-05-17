@@ -1,8 +1,8 @@
 // =============================================================================
 // MIPANGILIO YA SEVA NA MAWASILIANO YA REAL-TIME (SOCKET.IO)
 // =============================================================================
-const API_URL = "https://ndere.onrender.com"; // Link yako mpya ya Render iliyopo Live
-const socket = io(API_URL);
+const API_URL = "https://ndere.onrender.com"; // Link yako sahihi ya Render
+const socket = io(API_URL); // Inachukua API_URL hapo juu kiotomatiki
 
 // Data za mtumiaji aliyopo kwenye mfumo kwa sasa (Mfano wa majaribio)
 let currentUser = {
@@ -89,7 +89,6 @@ function downloadVideoWithWatermark(videoUrl, ownerUsername) {
     
     const link = document.createElement("a");
     link.href = videoUrl;
-    // Jina la file linalopakuliwa linakuwa na chapa yako kiotomatiki
     link.download = `jumannetok_tz_${ownerUsername}_video.mp4`;
     document.body.appendChild(link);
     link.click();
@@ -145,11 +144,10 @@ function shareVideoMobile(videoTitle, videoUrl) {
             text: "Angalia video hii kwenye mtandao wetu!",
             url: videoUrl
         }).then(() => {
-            // Kuhesabu share baada ya kufanikiwa
             console.log("Mtumiaji ameshare kwa mafanikio.");
         }).catch(err => console.log("Mtumiaji ameahirisha share"));
     } else {
-        copyVideoLink(videoUrl); // Kama simu haina weka njia ya copy link
+        copyVideoLink(videoUrl);
     }
 }
 
@@ -178,7 +176,6 @@ async function openCommentsSection(videoId, isNewLoad = true) {
             document.getElementById("comments-container").insertAdjacentHTML("beforeend", commentHtml);
         });
         
-        // Kitufe cha kuleta 10 zingine baada ya kumi za mwanzo kuisha
         if (comments.length === 10) {
             let moreBtn = `<button onclick="loadMoreComments('${videoId}')">Leta zingine 10...</button>`;
             document.getElementById("comments-container").insertAdjacentHTML("beforeend", moreBtn);
@@ -205,14 +202,13 @@ async function sendNewComment(videoId, commentTextInput) {
                 username: currentUser.username,
                 profile_pic: currentUser.profile_pic,
                 text: commentTextInput
-            keys: "form_data"
-            })
+            }) // Hapa pamesahihishwa!
         });
         
         if (response.ok) {
             let countElement = document.getElementById(`comment-count-${videoId}`);
             countElement.innerText = parseInt(countElement.innerText) + 1;
-            openCommentsSection(videoId, true); // Refresh kuona ya kwako juu
+            openCommentsSection(videoId, true); 
         }
     } catch (error) {
         console.error("Kutuma comment kumeshindikana:", error);
@@ -220,10 +216,9 @@ async function sendNewComment(videoId, commentTextInput) {
 }
 
 // =============================================================================
-// 3. WHATSAPP-LIKE REALTIME CHATS (Ujumbe wa siri, Picha, Video, na Tik mbili za Uhakiki)
+// 3. WHATSAPP-LIKE REALTIME CHATS (Ujumbe wa siri, Picha, Video, na Tik mbili)
 // =============================================================================
 
-// A. Kupakia profile kumi kumi (ukifika ya nane inashusha zingine kumi)
 async function loadChatProfilesList() {
     try {
         let res = await fetch(`${API_URL}/api/chats/users?username=${currentUser.username}&page=${currentChatUserPage}`);
@@ -239,7 +234,6 @@ async function loadChatProfilesList() {
             `;
             document.getElementById("chat-profiles-list").insertAdjacentHTML("beforeend", profileHtml);
             
-            // Kijasusi cha ukurasa: Mtumiaji akifikia wasifu wa 8 mfululizo, unaongeza profile 10 zingine
             if (index === 7 && users.length === 10) {
                 currentChatUserPage++;
                 loadChatProfilesList();
@@ -250,47 +244,38 @@ async function loadChatProfilesList() {
     }
 }
 
-// B. Kuanzisha Sehemu ya Kuandika na Kutuma Ujumbe wa Siri
 function startPrivateChatWindow(partnerUsername) {
     currentActiveChatPartner = partnerUsername;
     document.getElementById("chat-box-title").innerText = `Ujumbe wa Siri na: ${partnerUsername}`;
-    document.getElementById("chat-messages-area").innerHTML = ""; // Inasafisha skrini
+    document.getElementById("chat-messages-area").innerHTML = ""; 
 }
 
-// C. Kutuma Ujumbe (Maandishi, Picha, au Video kwa sekunde 1 tu)
 function sendPrivateMessage(content, msgType = "text") {
     if (!currentActiveChatPartner) return alert("Chagua mtu wa kuchat naye kwanza!");
     
     let msgData = {
-        _id: "temp_" + Date.now(), // ID ya muda kabla ya kuhifadhiwa database
+        _id: "temp_" + Date.now(), 
         sender: currentUser.username,
         receiver: currentActiveChatPartner,
-        type: msgType, // text, image, au video
+        type: msgType, 
         content: content
     };
     
-    // Inamfikia mlengwa ndani ya sekunde 1 kama yupo mkondoni
     socket.emit("send_message", msgData);
-    
-    // UI: Inaonyesha ujumbe wako upande wako ukiwa na TIK MOJA ya kijivu (Sent)
     appendMessageToScreen(msgData, "my-message", "✓");
 }
 
-// D. Pokea Ujumbe kutoka kwa mtu mwingine real-time sekunde iyo hiyo
 socket.on("message_received", (msg) => {
     if (msg.sender === currentActiveChatPartner) {
         appendMessageToScreen(msg, "partner-message", "");
-        
-        // Mfumo unamrudishia taarifa aliyetuma kuwa ujumbe umefika (Delivery Report)
         socket.emit("msg_delivered", { msg_id: msg._id, sender: msg.sender });
     }
 });
 
-// E. Kupokea Delivery Report na kubadili tik kuwa mbili (✓✓) kama WhatsApp
 socket.on("status_updated", (data) => {
     let tickElement = document.getElementById(`tick-${data.msg_id}`);
     if (tickElement) {
-        tickElement.innerText = "✓✓"; // Imefika kwa mlengwa kikamilifu!
+        tickElement.innerText = "✓✓"; 
     }
 });
 
@@ -316,12 +301,9 @@ function initiateLiveVideoCall() {
     
     alert(`Inapiga simu ya video ya Live kwenda kwa ${currentActiveChatPartner}...`);
     
-    // Fungua kamera na mic za simu ya mtumiaji
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         .then((stream) => {
             document.getElementById("local-video-screen").srcObject = stream;
-            
-            // Tuma ombi la video call kupitia socket
             socket.emit("call_user", {
                 userToCall: currentActiveChatPartner,
                 from: currentUser.username
@@ -334,7 +316,6 @@ function initiateLiveVideoCall() {
 // 5. MFUMO WA FRIENDS (Followers, Confirm, Delete, Orodha ya 10-10)
 // =============================================================================
 
-// A. Kitufe cha Kutuma Ombi la Urafiki (Follow)
 async function followTargetUser(targetUsername) {
     try {
         let response = await fetch(`${API_URL}/api/friends/follow`, {
@@ -343,14 +324,13 @@ async function followTargetUser(targetUsername) {
             body: JSON.stringify({ sender: currentUser.username, receiver: targetUsername })
         });
         if (response.ok) {
-            alert(`Ombi la urafiki limetumwa! ${targetUsername} akifungua atakuta option ya Confirm au Delete.`);
+            alert(`Ombi la urafiki limetumwa!`);
         }
     } catch (error) {
         console.error("Ombi la follow limefeli:", error);
     }
 }
 
-// B. Kupakia Orodha ya Marafiki Kumi Kwanza (Pagination 10-10)
 async function loadMyFriendsSection() {
     try {
         let response = await fetch(`${API_URL}/api/friends/list?username=${currentUser.username}&page=${currentFriendPage}`);
@@ -387,7 +367,6 @@ async function switchVideoFeedTab(feedType) {
     currentVideoPage = 1;
     document.getElementById("video-feed-container").innerHTML = "Inatafuta video...";
     
-    // feedType inaweza kuwa "for_you", "friends", au "search"
     let url = `${API_URL}/api/videos/feed?type=${feedType}&username=${currentUser.username}&page=${currentVideoPage}`;
     
     if (feedType === "search") {
@@ -399,7 +378,7 @@ async function switchVideoFeedTab(feedType) {
         let response = await fetch(url);
         let videos = await response.json();
         
-        document.getElementById("video-feed-container").innerHTML = ""; // Safisha skrini
+        document.getElementById("video-feed-container").innerHTML = ""; 
         
         videos.forEach(video => {
             let videoCardHtml = `
@@ -418,5 +397,5 @@ async function switchVideoFeedTab(feedType) {
     } catch (error) {
         console.error("Kuload video feed kumeshindikana:", error);
     }
-        }
-                
+            }
+            
