@@ -1,8 +1,8 @@
 // ==========================================
 // 1. GLOBAL CONFIGURATIONS & STATE MANAGEMENT
 // ==========================================
-const API_URL = "https://mwampambatoktz-16.onrender.com";
-const WS_URL = "wss://://mwampambatoktz-16.onrender.com";
+const API_URL = "https://jumanne.onrender.com";
+const WS_URL = "wss://://jumanne.onrender.com";
 
 let currentToken = localStorage.getItem("jumanne_tok_token") || "";
 let currentUsername = localStorage.getItem("jumanne_tok_username") || "";
