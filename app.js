@@ -11,6 +11,7 @@ let currentUser = {
 };
 
 // Vigezo vya kurasa (Pagination - Kumi Kumi)
+let currentVideoId = null;
 let currentVideoPage = 1;
 let currentCommentPage = 1;
 let currentChatUserPage = 1;
@@ -293,6 +294,11 @@ function appendMessageToScreen(msg, className, tickStyle) {
     document.getElementById("chat-messages-area").insertAdjacentHTML("beforeend", msgHtml);
 }
 
+function saveVideoToBookmarks(videoId) {
+    alert("Video imehifadhiwa kwenye alamisho (Bookmarks) zako!");
+}
+
+
 // =============================================================================
 // 4. VIDEO CALL MFUMO (WebRTC Real-time Voice & Video Call Live)
 // =============================================================================
@@ -398,4 +404,9 @@ async function switchVideoFeedTab(feedType) {
         console.error("Kuload video feed kumeshindikana:", error);
     }
             }
+// Inapakia video za "For You" kiotomatiki mara tu mtumiaji anapofungua tovuti
+window.addEventListener("DOMContentLoaded", () => {
+    switchVideoFeedTab('for_you');
+});
+
             
