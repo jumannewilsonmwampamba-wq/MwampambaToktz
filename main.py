@@ -458,7 +458,7 @@ import requests
 
 def keep_alive():
     time.sleep(300)
-    url = "https://Jumanne.onrender.com"
+    url = "https://furaha.onrender.com"
     while True:
         try:
             response = requests.get(url)
